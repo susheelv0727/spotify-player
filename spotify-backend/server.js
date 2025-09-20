@@ -5,19 +5,28 @@ import cors from "cors";
 import dotenv from "dotenv";
 import querystring from "querystring";
 
-dotenv.config();
+dotenv.config({ path: '../.env' });
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
+
+// Test endpoint
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Backend is working!", timestamp: new Date().toISOString() });
+});
 
 const PORT = 8888;
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = "https://spotifyplayer-br00--5173--96435430.local-credentialless.webcontainer.io/callback";
+const REDIRECT_URI = process.env.REDIRECT_URI;
 
 app.post("/api/token", async (req, res) => {
   const { code } = req.body;
+  console.log("Received authorization code:", code);
 
   try {
     const response = await axios.post(
@@ -35,10 +44,14 @@ app.post("/api/token", async (req, res) => {
       }
     );
 
+    console.log("Token exchange successful");
     res.json(response.data);
   } catch (error) {
-    console.error(error.response?.data || error);
-    res.status(400).json({ error: "Token exchange failed" });
+    console.error("Token exchange failed:", error.response?.data || error.message);
+    res.status(400).json({ 
+      error: "Token exchange failed", 
+      details: error.response?.data || error.message 
+    });
   }
 });
 
